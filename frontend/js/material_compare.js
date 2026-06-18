@@ -4,7 +4,6 @@ const MaterialCompare = {
     result: null,
     bearingId: 1,
     chart: null,
-    eraChart: null,
 
     init(bearingId = 1) {
         this.bearingId = bearingId;
@@ -23,16 +22,13 @@ const MaterialCompare = {
             this.selectedMaterials.add("cast_iron_ancient");
             this.renderSelection();
         } catch (e) {
-            console.error("加载材料库失败:", e);
+            console.error("[MaterialCompare] 加载材料库失败:", e);
         }
     },
 
     bindEvents() {
         const btn = document.getElementById("btn-run-material-compare");
         if (btn) btn.onclick = () => this.runComparison();
-
-        const btnCross = document.getElementById("btn-run-cross-era");
-        if (btnCross) btnCross.onclick = () => this.runCrossEra();
     },
 
     renderMaterialList() {
@@ -40,10 +36,10 @@ const MaterialCompare = {
         if (!container) return;
 
         const groups = {
-            ancient_wood: { title: "🌳 古代木材", items: [] },
-            ancient_metal: { title: "⚙️ 古代金属", items: [] },
-            ancient_composite: { title: "🔧 古代复合材料", items: [] },
-            modern: { title: "🚀 现代轴承材料", items: [] },
+            ancient_wood: { title: "[Wood] 古代木材", items: [] },
+            ancient_metal: { title: "[Metal] 古代金属", items: [] },
+            ancient_composite: { title: "[Composite] 古代复合材料", items: [] },
+            modern: { title: "[Modern] 现代轴承材料", items: [] },
         };
 
         this.materials.forEach(m => {
@@ -64,7 +60,7 @@ const MaterialCompare = {
                 <div class="material-grid">`;
             group.items.forEach(m => {
                 const checked = this.selectedMaterials.has(m.code) ? "checked" : "";
-                const wearIcon = m.wear_resistance_factor > 5 ? "🌟" : m.wear_resistance_factor > 1 ? "⭐" : "";
+                const wearIcon = m.wear_resistance_factor > 5 ? "*" : m.wear_resistance_factor > 1 ? "+" : "";
                 html += `<label class="material-card ${checked ? "selected" : ""}" data-code="${m.code}">
                     <input type="checkbox" value="${m.code}" ${checked}/>
                     <div class="card-header">
@@ -73,7 +69,7 @@ const MaterialCompare = {
                     </div>
                     <div class="card-meta">
                         <span>硬度 <b>${m.hardness_hv_nominal || m.hardnessHVNominal}</b> HV</span>
-                        <span>耐磨系数 <b>${(m.wear_resistance_factor || 1).toFixed(2)}</b>×</span>
+                        <span>耐磨系数 <b>${(m.wear_resistance_factor || 1).toFixed(2)}</b>x</span>
                     </div>
                 </label>`;
             });
@@ -116,7 +112,7 @@ const MaterialCompare = {
         }
 
         const status = document.getElementById("material-compare-status");
-        status.textContent = "⏳ 正在运行仿真计算...";
+        if (status) status.textContent = "[Running] 正在运行仿真计算...";
 
         try {
             this.result = await API.compareMaterials({
@@ -127,30 +123,9 @@ const MaterialCompare = {
                 title: "材料对比 - " + new Date().toLocaleDateString(),
             });
             this.renderResults();
-            status.textContent = "✅ 计算完成";
+            if (status) status.textContent = "[OK] 计算完成";
         } catch (e) {
-            status.textContent = "❌ 计算失败: " + e.message;
-            console.error(e);
-        }
-    },
-
-    async runCrossEra() {
-        const status = document.getElementById("cross-era-status");
-        status.textContent = "⏳ 正在运行跨时代磨损对比...";
-
-        try {
-            const res = await API.crossEraComparison({
-                bearing_diameter_mm: 150,
-                bearing_width_mm: 80,
-                reference_load_n: 5000,
-                reference_speed_rpm: 15,
-                simulation_hours: 8760 * 3,
-                save_report: true,
-            });
-            this.renderCrossEra(res);
-            status.textContent = "✅ 跨时代对比完成";
-        } catch (e) {
-            status.textContent = "❌ 对比失败: " + e.message;
+            if (status) status.textContent = "[Error] 计算失败: " + e.message;
             console.error(e);
         }
     },
@@ -165,17 +140,17 @@ const MaterialCompare = {
             return;
         }
 
-        const eraLabels = { ancient: "🏛️ 古代", modern: "💎 现代" };
+        const eraLabels = { ancient: "[Ancient] 古代", modern: "[Modern] 现代" };
         const bestLife = items[0].predicted_life_hours || items[0].PredictedLifeHours;
 
         let tableHtml = `
             <div class="compare-header">
-                <h3>📊 材料磨损寿命对比分析</h3>
+                <h3>[Result] 材料磨损寿命对比分析</h3>
                 <div class="compare-meta">
                     基准轴承ID: <b>${this.result.base_bearing_id || this.result.BaseBearingID}</b> |
                     工况: 载荷 <b>${this.result.reference_load_n || this.result.ReferenceLoad} N</b>,
                     转速 <b>${this.result.reference_speed_rpm || this.result.ReferenceSpeed} RPM</b>,
-                    温度 <b>${this.result.reference_temp_celsius || this.result.ReferenceTemp} °C</b>
+                    温度 <b>${this.result.reference_temp_celsius || this.result.ReferenceTemp} C</b>
                 </div>
             </div>
 
@@ -187,9 +162,9 @@ const MaterialCompare = {
                             <th>材料名称</th>
                             <th>时代</th>
                             <th>硬度(HV)</th>
-                            <th>累计磨损(μm)</th>
-                            <th>磨损率(μm/h)</th>
-                            <th>EHL λ 参数</th>
+                            <th>累计磨损(um)</th>
+                            <th>磨损率(um/h)</th>
+                            <th>EHL lambda 参数</th>
                             <th>预估寿命</th>
                             <th>最佳寿命比</th>
                         </tr>
@@ -230,7 +205,7 @@ const MaterialCompare = {
 
         tableHtml += `
             <div class="compare-insights">
-                <h4>💡 分析结论</h4>
+                <h4>[Insight] 分析结论</h4>
                 <ul>
                     <li>最优材料：<b>${best.material_name || best.MaterialName}</b>，预估寿命 <b>${(best.predicted_life_years || best.PredictedLifeYears).toFixed(1)}年</b></li>
                     <li>磨损率差异：最好 vs 最差 = <b>${improvement.toFixed(1)} 倍</b>，材料选择至关重要！</li>
@@ -244,7 +219,7 @@ const MaterialCompare = {
 
     renderChart(items) {
         const ctx = document.getElementById("material-compare-chart");
-        if (!ctx) return;
+        if (!ctx || !window.Chart) return;
         if (this.chart) this.chart.destroy();
 
         this.chart = new Chart(ctx, {
@@ -261,7 +236,7 @@ const MaterialCompare = {
                         yAxisID: "y",
                     },
                     {
-                        label: "磨损率 (μm/h, 反向)",
+                        label: "磨损率 (um/h, 反向)",
                         data: items.map(i => 1 / Math.max(i.wear_rate_um_per_hour || i.WearRateUmPerHour, 0.0001)),
                         type: "line",
                         borderColor: "#ffb74d",
@@ -283,67 +258,6 @@ const MaterialCompare = {
                 },
             },
         });
-    },
-
-    renderCrossEra(res) {
-        const div = document.getElementById("cross-era-results");
-        if (!div) return;
-
-        const ancient = res.ancient_best || res.AncientBest;
-        const modern = res.modern_best || res.ModernBest;
-        const items = res.all_items || res.AllItems || [];
-        const improvement = res.life_improvement_x || res.LifeImprovementX || 0;
-        const reduction = res.wear_reduction_percent || res.WearReductionPct || 0;
-
-        let html = `
-            <div class="cross-era-wrap">
-                <div class="era-card ancient">
-                    <h3>🏛️ 古代最优方案</h3>
-                    <div class="era-main-metric">${(ancient?.predicted_life_years || ancient?.PredictedLifeYears || 0).toFixed(1)} <span class="unit">年</span></div>
-                    <div class="era-name">${ancient?.material_name || ancient?.MaterialName || "-"}</div>
-                    <div class="era-desc">磨损率: ${(ancient?.wear_rate_um_per_hour || ancient?.WearRateUmPerHour || 0).toFixed(4)} μm/h</div>
-                </div>
-
-                <div class="vs-arrow">
-                    <div class="vs-text">⚡ VS</div>
-                    <div class="improvement">
-                        <div class="big-improve">${improvement.toFixed(0)}<span class="unit">×</span></div>
-                        <div class="improv-label">现代寿命提升</div>
-                    </div>
-                </div>
-
-                <div class="era-card modern">
-                    <h3>💎 现代最优方案</h3>
-                    <div class="era-main-metric">${(modern?.predicted_life_years || modern?.PredictedLifeYears || 0).toFixed(1)} <span class="unit">年</span></div>
-                    <div class="era-name">${modern?.material_name || modern?.MaterialName || "-"}</div>
-                    <div class="era-desc">磨损率: ${(modern?.wear_rate_um_per_hour || modern?.WearRateUmPerHour || 0).toFixed(4)} μm/h</div>
-                </div>
-            </div>
-
-            <div class="cross-stats">
-                <div class="stat-card">
-                    <div class="stat-value">${reduction.toFixed(1)}%</div>
-                    <div class="stat-label">磨损率降低</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${items.length}</div>
-                    <div class="stat-label">参与对比材料</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value">${(res.bearing_diameter || res.BearingDiameter)}</div>
-                    <div class="stat-label">轴承直径 (mm)</div>
-                </div>
-            </div>`;
-
-        const insights = res.insight_summary || res.InsightSummary || [];
-        if (insights.length) {
-            html += `<div class="compare-insights">
-                <h4>🔬 跨时代洞察</h4>
-                <ul>${insights.map(s => `<li>${s}</li>`).join("")}</ul>
-            </div>`;
-        }
-
-        div.innerHTML = html;
     },
 
     shorten(str, maxLen) {

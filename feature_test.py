@@ -881,6 +881,19 @@ def main():
     test("虚拟操作简化有效", test_simplified_virtual_operations)
 
     print()
+    print("▌ 架构重构验证")
+    print("-" * 40)
+    test("重构后5个独立Go模块", test_refactored_module_structure)
+    test("磨损计算goroutine异步池", test_wearcalc_async_goroutine)
+    test("material_comparator模块独立", test_material_comparator_independence)
+    test("era_comparator模块独立", test_era_comparator_independence)
+    test("lubricant_analyzer模块独立", test_lubricant_analyzer_independence)
+    test("vr_maintenance模块独立", test_vr_maintenance_independence)
+    test("API Handler切换新模块", test_feature_handlers_uses_new_modules)
+    test("前端4个独立组件", test_frontend_independent_components)
+    test("旧模块保留向后兼容", test_backward_compat_old_modules_preserved)
+
+    print()
     print("=" * 70)
     passed = sum(1 for _, status, _ in test_results if "通过" in status)
     failed = sum(1 for _, status, _ in test_results if "失败" in status)
@@ -907,7 +920,197 @@ def main():
     print("  [OK] 跨时代寿命提升: 算法结构、洞察多场景、古今对比")
     print("  [OK] 虚拟维护教育性: 历史说明、成本提示、Preview/Execute双阶段")
     print("  [OK] 代码防御: 边界输入、异常输入、零侵入兼容")
+    print("  [OK] 模块拆分: wearcalc异步池、4独立Go模块、4独立前端组件")
     return 0
+
+
+def test_refactored_module_structure():
+    """验证重构后5个独立Go模块存在且结构完整"""
+    modules = [
+        "wearcalc/calculator.go",
+        "material_comparator/comparator.go",
+        "era_comparator/comparator.go",
+        "lubricant_analyzer/analyzer.go",
+        "vr_maintenance/manager.go",
+    ]
+    for m in modules:
+        fpath = MODULES_DIR / m
+        assert fpath.exists(), f"重构后模块缺失: {m}"
+        content = fpath.read_text(encoding="utf-8")
+        assert "package " in content, f"{m} 缺少 package 声明"
+
+    print("  5个独立Go模块全部就位:")
+    print("    wearcalc - 共享磨损计算核心+goroutine异步池")
+    print("    material_comparator - 材料对比独立模块")
+    print("    era_comparator - 跨时代对比独立模块")
+    print("    lubricant_analyzer - 润滑剂分析独立模块")
+    print("    vr_maintenance - 虚拟维护独立模块")
+
+
+def test_wearcalc_async_goroutine():
+    """验证磨损计算放入独立goroutine异步池"""
+    fpath = MODULES_DIR / "wearcalc" / "calculator.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "SimulateWearAsync" in content, "缺少 SimulateWearAsync 异步方法"
+    assert "BatchSimulate" in content, "缺少 BatchSimulate 批量并行方法"
+    assert "taskQueue" in content, "缺少 Channel 任务队列"
+    assert "startWorkers" in content, "缺少 Worker 启动逻辑"
+    assert "go func()" in content, "缺少 goroutine 启动 (go func)"
+    assert "WaitGroup" in content, "缺少 sync.WaitGroup 线程同步"
+    assert "chan " in content, "缺少 Channel 类型声明"
+
+    worker_count = re.findall(r"workerCount", content)
+    assert len(worker_count) >= 3, "Worker计数变量未被充分使用"
+
+    print("  goroutine异步池实现:")
+    print("    taskQueue: Channel缓冲任务队列")
+    print("    SimulateWearAsync: 单任务异步提交")
+    print("    BatchSimulate: 批量并行仿真，自动收集结果")
+    print("    WaitGroup: Worker优雅退出同步")
+
+
+def test_material_comparator_independence():
+    """验证material_comparator为独立自包含模块"""
+    fpath = MODULES_DIR / "material_comparator" / "comparator.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "package material_comparator" in content, "包名错误"
+    assert "type MaterialComparator struct" in content, "缺少 MaterialComparator 结构体"
+    assert "func NewMaterialComparator" in content, "缺少构造函数"
+    assert re.search(r"func.*CompareMaterials\b", content), "缺少 CompareMaterials 方法"
+    assert re.search(r"func.*CompareMaterialsGeneric\b", content), "缺少 CompareMaterialsGeneric 方法"
+
+    # 验证依赖正确：只依赖 wearcalc，不依赖其他 comparator
+    imports = re.findall(r'"noria-bearing-system.*?"', content)
+    assert any("wearcalc" in imp for imp in imports), "应依赖 wearcalc 共享核心"
+    assert not any("era_comparator" in imp for imp in imports), "不应依赖 era_comparator"
+    assert not any("lubricant_analyzer" in imp for imp in imports), "不应依赖 lubricant_analyzer"
+
+    print("  material_comparator 独立性: 仅依赖 wearcalc 共享核心")
+    print("  公开API: NewMaterialComparator, CompareMaterials, CompareMaterialsGeneric")
+
+
+def test_era_comparator_independence():
+    """验证era_comparator为独立自包含模块"""
+    fpath = MODULES_DIR / "era_comparator" / "comparator.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "package era_comparator" in content, "包名错误"
+    assert "type EraComparator struct" in content, "缺少 EraComparator 结构体"
+    assert "func NewEraComparator" in content, "缺少构造函数"
+    assert re.search(r"func.*CrossEraComparison\b", content), "缺少 CrossEraComparison 方法"
+    assert re.search(r"func.*generateEraInsights\b", content), "缺少洞察生成逻辑"
+
+    imports = re.findall(r'"noria-bearing-system.*?"', content)
+    assert any("material_comparator" in imp for imp in imports), "应复用 material_comparator"
+    assert not any("lubricant_analyzer" in imp for imp in imports), "不应直接依赖 lubricant_analyzer"
+
+    print("  era_comparator 独立性: 依赖 material_comparator + wearcalc")
+    print("  公开API: NewEraComparator, CrossEraComparison")
+
+
+def test_lubricant_analyzer_independence():
+    """验证lubricant_analyzer为独立自包含模块"""
+    fpath = MODULES_DIR / "lubricant_analyzer" / "analyzer.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "package lubricant_analyzer" in content, "包名错误"
+    assert "type LubricantAnalyzer struct" in content, "缺少 LubricantAnalyzer 结构体"
+    assert "func NewLubricantAnalyzer" in content, "缺少构造函数"
+    assert re.search(r"func.*CompareLubricants\b", content), "缺少 CompareLubricants 方法"
+
+    imports = re.findall(r'"noria-bearing-system.*?"', content)
+    assert any("wearcalc" in imp for imp in imports), "应依赖 wearcalc 共享核心"
+    assert not any("material_comparator" in imp for imp in imports), "不应依赖 material_comparator"
+    assert not any("era_comparator" in imp for imp in imports), "不应依赖 era_comparator"
+
+    print("  lubricant_analyzer 独立性: 仅依赖 wearcalc 共享核心")
+    print("  公开API: NewLubricantAnalyzer, CompareLubricants")
+
+
+def test_vr_maintenance_independence():
+    """验证vr_maintenance为独立自包含模块"""
+    fpath = MODULES_DIR / "vr_maintenance" / "manager.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "package vr_maintenance" in content, "包名错误（应为 vr_maintenance）"
+    assert "type VRMaintenanceManager struct" in content, "缺少 VRMaintenanceManager 结构体"
+    assert "func NewVRMaintenanceManager" in content, "缺少构造函数"
+    assert "type SmartRecommendation struct" in content, "缺少 SmartRecommendation"
+    assert re.search(r"func.*SmartRecommend\b", content), "缺少 SmartRecommend"
+    assert re.search(r"func.*OneClickReplaceBearing\b", content), "缺少 OneClickReplaceBearing"
+    assert re.search(r"func.*OneClickAddLubricant\b", content), "缺少 OneClickAddLubricant"
+
+    imports = re.findall(r'"noria-bearing-system.*?"', content)
+    assert any("material_comparator" in imp for imp in imports), "应依赖 material_comparator"
+    assert any("lubricant_analyzer" in imp for imp in imports), "应依赖 lubricant_analyzer"
+
+    print("  vr_maintenance 独立性: 依赖 material_comparator + lubricant_analyzer")
+    print("  公开API: SmartRecommend, OneClickReplaceBearing, OneClickAddLubricant")
+
+
+def test_feature_handlers_uses_new_modules():
+    """验证API Handler已切换到新的独立模块"""
+    fpath = BACKEND_DIR / "internal" / "api" / "feature_handlers.go"
+    content = fpath.read_text(encoding="utf-8")
+
+    assert "material_comparator" in content, "Handler应引用 material_comparator"
+    assert "era_comparator" in content, "Handler应引用 era_comparator"
+    assert "lubricant_analyzer" in content, "Handler应引用 lubricant_analyzer"
+    assert "vr_maintenance" in content, "Handler应引用 vr_maintenance"
+
+    # 确认不再引用旧模块 import
+    assert "modules/analysis\"" not in content, "Handler不应再 import analysis 旧模块"
+    assert "modules/maintenance\"" not in content, "Handler不应再 import maintenance 旧模块"
+
+    print("  API Handler已全部切换到新的4个独立模块引用")
+
+
+def test_frontend_independent_components():
+    """验证前端4个独立组件文件存在且独立"""
+    components = [
+        "js/material_compare.js",
+        "js/era_comparator.js",
+        "js/lubricant_analysis.js",
+        "js/virtual_maintenance.js",
+    ]
+    for c in components:
+        fpath = FRONTEND_DIR / c
+        assert fpath.exists(), f"前端组件缺失: {c}"
+        content = fpath.read_text(encoding="utf-8")
+        assert "const " in content, f"{c} 应定义顶层组件对象"
+
+    # 验证各组件自包含
+    era_content = (FRONTEND_DIR / "js" / "era_comparator.js").read_text(encoding="utf-8")
+    assert "const EraComparator" in era_content, "era_comparator.js 应定义 EraComparator"
+    assert "runCrossEra" in era_content, "era_comparator.js 应包含跨时代对比逻辑"
+
+    mc_content = (FRONTEND_DIR / "js" / "material_compare.js").read_text(encoding="utf-8")
+    assert "runCrossEra" not in mc_content, "material_compare.js 不应包含跨时代逻辑（已拆分）"
+
+    # 验证 index.html 加载4个组件
+    index_content = (FRONTEND_DIR / "index.html").read_text(encoding="utf-8")
+    for c in components:
+        assert c in index_content, f"index.html 未加载 {c}"
+
+    print("  前端4个独立组件已就位并加载:")
+    print("    material_compare.js - 材料对比组件")
+    print("    era_comparator.js - 跨时代对比组件 (新增独立)")
+    print("    lubricant_analysis.js - 润滑剂分析组件")
+    print("    virtual_maintenance.js - 虚拟维护组件")
+
+
+def test_backward_compat_old_modules_preserved():
+    """验证旧模块文件保留，向后兼容"""
+    old_files = [
+        "analysis/comparison.go",
+        "maintenance/manager.go",
+    ]
+    for f in old_files:
+        fpath = MODULES_DIR / f
+        assert fpath.exists(), f"旧模块文件应保留以兼容: {f}"
+    print("  旧模块文件保留，保证向后兼容")
 
 
 if __name__ == '__main__':

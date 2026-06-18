@@ -42,6 +42,7 @@ const App = {
             }
 
             MaterialCompare.init(bid);
+            EraComparator.init();
             LubricantAnalysis.init(bid);
             VirtualMaintenance.init(bid);
             this._pendingFeatures = false;

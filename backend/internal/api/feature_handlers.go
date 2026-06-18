@@ -9,19 +9,25 @@ import (
 	"github.com/gin-gonic/gin"
 	"noria-bearing-system/internal/database"
 	"noria-bearing-system/internal/models"
-	"noria-bearing-system/internal/modules/analysis"
-	"noria-bearing-system/internal/modules/maintenance"
+	"noria-bearing-system/internal/modules/era_comparator"
+	"noria-bearing-system/internal/modules/lubricant_analyzer"
+	"noria-bearing-system/internal/modules/material_comparator"
+	"noria-bearing-system/internal/modules/vr_maintenance"
 )
 
 type FeatureHandler struct {
-	engine        *analysis.ComparisonEngine
-	maintenance   *maintenance.MaintenanceManager
+	mc          *material_comparator.MaterialComparator
+	ec          *era_comparator.EraComparator
+	la          *lubricant_analyzer.LubricantAnalyzer
+	maintenance *vr_maintenance.VRMaintenanceManager
 }
 
 func NewFeatureHandler() *FeatureHandler {
 	return &FeatureHandler{
-		engine:      analysis.NewComparisonEngine(),
-		maintenance: maintenance.NewMaintenanceManager(database.Instance),
+		mc:          material_comparator.NewMaterialComparator(),
+		ec:          era_comparator.NewEraComparator(),
+		la:          lubricant_analyzer.NewLubricantAnalyzer(),
+		maintenance: vr_maintenance.NewVRMaintenanceManager(database.Instance),
 	}
 }
 
@@ -31,11 +37,11 @@ func (fh *FeatureHandler) ListBearingMaterials(c *gin.Context) {
 
 	var materials interface{}
 	if eraFilter != "" {
-		materials = fh.engine.GetMaterialsByEra(eraFilter)
+		materials = fh.mc.GetMaterialsByEra(eraFilter)
 	} else if categoryFilter != "" {
-		materials = fh.engine.GetAllMaterials()
+		materials = fh.mc.GetAllMaterials()
 	} else {
-		materials = fh.engine.GetAllMaterials()
+		materials = fh.mc.GetAllMaterials()
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -50,11 +56,11 @@ func (fh *FeatureHandler) ListLubricants(c *gin.Context) {
 
 	var results interface{}
 	if categoryFilter != "" {
-		results = fh.engine.GetLubricantsByCategory(categoryFilter)
+		results = fh.la.GetLubricantsByCategory(categoryFilter)
 	} else if eraFilter != "" {
-		results = fh.engine.GetAllLubricants()
+		results = fh.la.GetAllLubricants()
 	} else {
-		results = fh.engine.GetAllLubricants()
+		results = fh.la.GetAllLubricants()
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -123,7 +129,7 @@ func (fh *FeatureHandler) CompareMaterials(c *gin.Context) {
 		simHours = *req.SimulationHours
 	}
 
-	result := fh.engine.CompareMaterials(bearing, req.MaterialCodes, loadN, speedRPM, tempC, simHours)
+	result := fh.mc.CompareMaterials(bearing, req.MaterialCodes, loadN, speedRPM, tempC, simHours)
 
 	if req.SaveReport {
 		paramsJSON, _ := jsonMarshal(req)
@@ -201,7 +207,7 @@ func (fh *FeatureHandler) CompareLubricants(c *gin.Context) {
 		simHours = *req.SimulationHours
 	}
 
-	result := fh.engine.CompareLubricants(bearing, materialCode, req.LubricantCodes, loadN, speedRPM, tempC, simHours)
+	result := fh.la.CompareLubricants(bearing, materialCode, req.LubricantCodes, loadN, speedRPM, tempC, simHours)
 
 	if req.SaveReport {
 		paramsJSON, _ := jsonMarshal(req)
@@ -258,7 +264,7 @@ func (fh *FeatureHandler) CrossEraComparison(c *gin.Context) {
 		simHours = *req.SimulationHours
 	}
 
-	result := fh.engine.CrossEraComparison(diameterMM, widthMM, loadN, speedRPM, tempC, simHours)
+	result := fh.ec.CrossEraComparison(diameterMM, widthMM, loadN, speedRPM, tempC, simHours)
 
 	if req.SaveReport {
 		ctx := context.Background()
@@ -293,7 +299,7 @@ func (fh *FeatureHandler) PreviewBearingReplacement(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	params := maintenance.ReplaceBearingParams{
+	params := vr_maintenance.ReplaceBearingParams{
 		BearingID:       req.BearingID,
 		NewMaterialCode: req.NewMaterialCode,
 		OperatorName:    req.OperatorName,
@@ -317,7 +323,7 @@ func (fh *FeatureHandler) ExecuteBearingReplacement(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	params := maintenance.ReplaceBearingParams{
+	params := vr_maintenance.ReplaceBearingParams{
 		BearingID:       req.BearingID,
 		NewMaterialCode: req.NewMaterialCode,
 		OperatorName:    req.OperatorName,
@@ -362,7 +368,7 @@ func (fh *FeatureHandler) PreviewLubricantAddition(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	params := maintenance.AddLubricantParams{
+	params := vr_maintenance.AddLubricantParams{
 		BearingID:     req.BearingID,
 		LubricantCode: req.LubricantCode,
 		AmountML:      req.AmountML,
@@ -387,7 +393,7 @@ func (fh *FeatureHandler) ExecuteLubricantAddition(c *gin.Context) {
 	}
 
 	ctx := context.Background()
-	params := maintenance.AddLubricantParams{
+	params := vr_maintenance.AddLubricantParams{
 		BearingID:     req.BearingID,
 		LubricantCode: req.LubricantCode,
 		AmountML:      req.AmountML,
@@ -450,7 +456,7 @@ func (fh *FeatureHandler) GetMaintenancePlan(c *gin.Context) {
 }
 
 func (fh *FeatureHandler) GetMaterialReferenceData(c *gin.Context) {
-	result := fh.engine.GetAllMaterials()
+	result := fh.mc.GetAllMaterials()
 	c.JSON(http.StatusOK, gin.H{
 		"count":   len(result),
 		"columns": []string{"材料名称", "时代", "类型", "硬度HV", "弹性模量GPa", "耐磨性系数", "历史背景"},
@@ -459,7 +465,7 @@ func (fh *FeatureHandler) GetMaterialReferenceData(c *gin.Context) {
 }
 
 func (fh *FeatureHandler) GetLubricantReferenceData(c *gin.Context) {
-	result := fh.engine.GetAllLubricants()
+	result := fh.la.GetAllLubricants()
 	c.JSON(http.StatusOK, gin.H{
 		"count":   len(result),
 		"columns": []string{"名称", "类型", "时代", "粘度40°C", "粘度指数", "减磨率%", "推荐寿命h", "历史背景"},
