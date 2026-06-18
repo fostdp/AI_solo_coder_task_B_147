@@ -13,10 +13,40 @@ const App = {
         this._initBearingPanel();
         this._initOilFilmView();
         this._init3DView();
+        this._initFeatureViews();
         this._setupEventListeners();
         this._loadNoriaWheels();
         this._startClock();
         this._startDataRefresh();
+    },
+
+    _initFeatureViews() {
+        this._pendingFeatures = true;
+        const tryInit = () => {
+            if (!this.state.bearings || this.state.bearings.length === 0) {
+                setTimeout(tryInit, 500);
+                return;
+            }
+            const defaultBearing = this.state.selectedBearing || this.state.bearings[0];
+            const bid = defaultBearing?.id || 1;
+
+            const matSelect = document.getElementById("material-compare-bearing");
+            if (matSelect) {
+                matSelect.innerHTML = this.state.bearings.map(b =>
+                    `<option value="${b.id}" ${b.id === bid ? "selected" : ""}>${b.bearing_code} - ${b.position}</option>`
+                ).join("");
+                matSelect.onchange = (e) => {
+                    const id = parseInt(e.target.value);
+                    MaterialCompare.bearingId = id;
+                };
+            }
+
+            MaterialCompare.init(bid);
+            LubricantAnalysis.init(bid);
+            VirtualMaintenance.init(bid);
+            this._pendingFeatures = false;
+        };
+        setTimeout(tryInit, 200);
     },
 
     _setupNavigation() {

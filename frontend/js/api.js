@@ -64,6 +64,96 @@ const API = {
         return this._request(`/alerts/recent?limit=${limit}`);
     },
 
+    async getMaterials(era = null, category = null) {
+        let url = "/reference/materials";
+        const params = [];
+        if (era) params.push(`era=${era}`);
+        if (category) params.push(`category=${category}`);
+        if (params.length) url += "?" + params.join("&");
+        return this._request(url);
+    },
+
+    async getMaterialsDetail() {
+        return this._request("/reference/materials-detail");
+    },
+
+    async getLubricants(category = null, era = null) {
+        let url = "/reference/lubricants";
+        const params = [];
+        if (category) params.push(`category=${category}`);
+        if (era) params.push(`era=${era}`);
+        if (params.length) url += "?" + params.join("&");
+        return this._request(url);
+    },
+
+    async getLubricantsDetail() {
+        return this._request("/reference/lubricants-detail");
+    },
+
+    async compareMaterials(payload) {
+        return this._request("/analysis/compare-materials", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async compareLubricants(payload) {
+        return this._request("/analysis/compare-lubricants", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async crossEraComparison(payload = {}) {
+        return this._request("/analysis/cross-era-comparison", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async previewBearingReplacement(payload) {
+        return this._request("/maintenance/replace/preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async executeBearingReplacement(payload) {
+        return this._request("/maintenance/replace/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async previewLubricantAddition(payload) {
+        return this._request("/maintenance/lubricate/preview", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async executeLubricantAddition(payload) {
+        return this._request("/maintenance/lubricate/execute", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
+    },
+
+    async getMaintenanceHistory(bearingId = 0, limit = 50) {
+        return this._request(`/maintenance/history?bearing_id=${bearingId}&limit=${limit}`);
+    },
+
+    async getMaintenancePlan(bearingId) {
+        return this._request(`/maintenance/plan/${bearingId}`);
+    },
+
     async _request(url, options = {}) {
         try {
             const response = await fetch(this.baseUrl + url, {

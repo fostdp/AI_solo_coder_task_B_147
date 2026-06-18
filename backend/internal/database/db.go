@@ -351,3 +351,90 @@ func (db *DB) GetRecentAlerts(ctx context.Context, limit int) ([]models.AlertEve
 	}
 	return alerts, rows.Err()
 }
+
+func (db *DB) InsertMaintenanceRecord(ctx context.Context, rec *models.MaintenanceRecord) (int64, error) {
+	query := `
+		INSERT INTO maintenance_records (
+			bearing_id, performed_at, maintenance_type, action,
+			old_material_code, new_material_code, lubricant_code, lubricant_amount_ml,
+			wear_before_um, wear_after_um, operator_name, notes, user_session_id
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING id
+	`
+	var id int64
+	err := db.pool.QueryRow(ctx, query,
+		rec.BearingID, rec.PerformedAt, rec.MaintenanceType, rec.Action,
+		rec.OldMaterialCode, rec.NewMaterialCode, rec.LubricantCode, rec.LubricantAmount,
+		rec.WearBeforeUm, rec.WearAfterUm, rec.OperatorName, rec.Notes, rec.UserSessionID,
+	).Scan(&id)
+	return id, err
+}
+
+func (db *DB) GetMaintenanceRecords(ctx context.Context, bearingID, limit int) ([]models.MaintenanceRecord, error) {
+	query := `
+		SELECT id, bearing_id, performed_at, maintenance_type, action,
+			old_material_code, new_material_code, lubricant_code, lubricant_amount_ml,
+			wear_before_um, wear_after_um, operator_name, notes, user_session_id
+		FROM maintenance_records
+		WHERE ($1 = 0 OR bearing_id = $1)
+		ORDER BY performed_at DESC
+		LIMIT $2
+	`
+	rows, err := db.pool.Query(ctx, query, bearingID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var records []models.MaintenanceRecord
+	for rows.Next() {
+		var r models.MaintenanceRecord
+		err := rows.Scan(&r.ID, &r.BearingID, &r.PerformedAt, &r.MaintenanceType, &r.Action,
+			&r.OldMaterialCode, &r.NewMaterialCode, &r.LubricantCode, &r.LubricantAmount,
+			&r.WearBeforeUm, &r.WearAfterUm, &r.OperatorName, &r.Notes, &r.UserSessionID)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, r)
+	}
+	return records, rows.Err()
+}
+
+func (db *DB) UpdateBearingMaterialAndHardness(ctx context.Context, bearingID int, material string, hardnessHV float64) error {
+	query := `
+		UPDATE bearings SET material = $1, hardness_hv = $2, updated_at = NOW()
+		WHERE id = $3
+	`
+	_, err := db.pool.Exec(ctx, query, material, hardnessHV, bearingID)
+	return err
+}
+
+func (db *DB) UpsertBearingLubricationStatus(ctx context.Context, bearingID int, lubricantCode string, amountML float64, operatorName *string) error {
+	query := `
+		INSERT INTO bearing_lubrication_status (
+			bearing_id, lubricant_code, last_applied_at, applied_amount_ml, applied_by
+		) VALUES ($1, $2, NOW(), $3, $4)
+		ON CONFLICT (bearing_id) DO UPDATE SET
+			lubricant_code = EXCLUDED.lubricant_code,
+			last_applied_at = NOW(),
+			applied_amount_ml = EXCLUDED.applied_amount_ml,
+			applied_by = EXCLUDED.applied_by,
+			updated_at = NOW()
+	`
+	_, err := db.pool.Exec(ctx, query, bearingID, lubricantCode, amountML, operatorName)
+	return err
+}
+
+func (db *DB) InsertComparisonReport(ctx context.Context, reportType string, bearingID *int, parameters, result interface{}, sessionID, title *string) (int64, error) {
+	query := `
+		INSERT INTO comparison_reports (
+			report_type, base_bearing_id, parameters_json, result_json, user_session_id, title
+		) VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id
+	`
+	var id int64
+	err := db.pool.QueryRow(ctx, query, reportType, bearingID, parameters, result, sessionID, title).Scan(&id)
+	return id, err
+}
+
+type Database = DB

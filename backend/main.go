@@ -43,6 +43,16 @@ func main() {
 		config.AppConfig.Lubrication.MixedLubrication.SommerfeldThresholdLow,
 		config.AppConfig.Lubrication.MixedLubrication.SommerfeldThresholdHigh,
 		config.AppConfig.Lubrication.OilFilmRuptureThresholdMicrom)
+	log.Printf("  - 轴承材料库: 加载 %d 种材料 (古代%d种 / 现代%d种)",
+		len(config.AppConfig.Materials.Materials),
+		len(config.AppConfig.Materials.ListByEra("ancient")),
+		len(config.AppConfig.Materials.ListByEra("modern"))+len(config.AppConfig.Materials.ListByCategory("rolling")))
+	log.Printf("  - 润滑剂库: 加载 %d 种润滑剂 (植物%d / 动物%d / 矿物%d / 合成%d)",
+		len(config.AppConfig.Lubricants.Lubricants),
+		len(config.AppConfig.Lubricants.ListByCategory("vegetable")),
+		len(config.AppConfig.Lubricants.ListByCategory("animal")),
+		len(config.AppConfig.Lubricants.ListByCategory("mineral")),
+		len(config.AppConfig.Lubricants.ListByCategory("synthetic")))
 
 	if err := database.Connect(); err != nil {
 		log.Fatalf("数据库连接失败: %v", err)
@@ -148,6 +158,7 @@ func main() {
 	r.Use(api.CORSMiddleware(config.AppConfig.Server.CORSOrigins))
 
 	handler := api.NewHandler()
+	featureHandler := api.NewFeatureHandler()
 
 	r.GET("/health", handler.HealthCheck)
 	r.GET("/api/health", handler.HealthCheck)
@@ -173,6 +184,30 @@ func main() {
 
 		apiV1.GET("/debug/weibull", handler.DebugWeibull)
 	}
+
+	apiV1Feature := r.Group("/api/v1")
+	{
+		apiV1Feature.GET("/reference/materials", featureHandler.ListBearingMaterials)
+		apiV1Feature.GET("/reference/lubricants", featureHandler.ListLubricants)
+		apiV1Feature.GET("/reference/materials-detail", featureHandler.GetMaterialReferenceData)
+		apiV1Feature.GET("/reference/lubricants-detail", featureHandler.GetLubricantReferenceData)
+
+		apiV1Feature.POST("/analysis/compare-materials", featureHandler.CompareMaterials)
+		apiV1Feature.POST("/analysis/compare-lubricants", featureHandler.CompareLubricants)
+		apiV1Feature.POST("/analysis/cross-era-comparison", featureHandler.CrossEraComparison)
+
+		apiV1Feature.POST("/maintenance/replace/preview", featureHandler.PreviewBearingReplacement)
+		apiV1Feature.POST("/maintenance/replace/execute", featureHandler.ExecuteBearingReplacement)
+		apiV1Feature.POST("/maintenance/lubricate/preview", featureHandler.PreviewLubricantAddition)
+		apiV1Feature.POST("/maintenance/lubricate/execute", featureHandler.ExecuteLubricantAddition)
+		apiV1Feature.GET("/maintenance/history", featureHandler.GetMaintenanceHistory)
+		apiV1Feature.GET("/maintenance/plan/:bearing_id", featureHandler.GetMaintenancePlan)
+	}
+
+	log.Printf("新功能模块已启用: 材料对比分析、润滑剂影响分析、虚拟维护体验 (共12个新API接口)")
+	log.Printf("  - 参考数据: /api/v1/reference/*")
+	log.Printf("  - 对比分析: /api/v1/compare-*, /api/v1/cross-era-comparison")
+	log.Printf("  - 虚拟维护: /api/v1/maintenance/*")
 
 	r.Static("/static", "./static")
 

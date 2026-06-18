@@ -17,6 +17,8 @@ type Config struct {
 	Alert         AlertConfig         `mapstructure:"alert"`
 	WearParams    WearParamsConfig
 	Lubrication   LubricationConfig
+	Materials     BearingMaterialsConfig
+	Lubricants    LubricantsConfig
 }
 
 type ServerConfig struct {
@@ -109,6 +111,71 @@ type EHLCorrectionConfig struct {
 	LambdaMaxClamp                 float64 `json:"lambda_max_clamp"`
 }
 
+type BearingMaterial struct {
+	Code                    string   `json:"code"`
+	NameCN                  string   `json:"name_cn"`
+	Era                     string   `json:"era"`
+	Category                string   `json:"category"`
+	HardnessHVMin           float64  `json:"hardness_hv_min"`
+	HardnessHVNominal       float64  `json:"hardness_hv_nominal"`
+	HardnessHVMax           float64  `json:"hardness_hv_max"`
+	DensityKgPerM3          float64  `json:"density_kg_per_m3"`
+	ElasticModulusPa        float64  `json:"elastic_modulus_pa"`
+	PoissonRatio            float64  `json:"poisson_ratio"`
+	ThermalConductivity     float64  `json:"thermal_conductivity_w_per_mk"`
+	SurfaceRoughnessRMS     float64  `json:"surface_roughness_rms_meters"`
+	ArchardKBase            float64  `json:"archard_k_base"`
+	WearResistanceFactor    float64  `json:"wear_resistance_factor"`
+	CorrosionResistance     float64  `json:"corrosion_resistance"`
+	TemperatureLimitCelsius float64  `json:"temperature_limit_celsius"`
+	ManufacturingDifficulty float64  `json:"manufacturing_difficulty"`
+	HistoricalNote          string   `json:"historical_note"`
+	TypicalApplications     []string `json:"typical_applications"`
+}
+
+type BearingMaterialsConfig struct {
+	Materials          []BearingMaterial  `json:"materials"`
+	EraDefinitions     map[string]string  `json:"era_definitions"`
+	CategoryDefinitions map[string]string `json:"category_definitions"`
+	materialIndex      map[string]BearingMaterial
+}
+
+type Lubricant struct {
+	Code                      string   `json:"code"`
+	NameCN                    string   `json:"name_cn"`
+	Category                  string   `json:"category"`
+	Era                       string   `json:"era"`
+	BaseOilType               string   `json:"base_oil_type"`
+	Viscosity40C              float64  `json:"viscosity_40c_mm2_per_s"`
+	Viscosity100C             float64  `json:"viscosity_100c_mm2_per_s"`
+	ViscosityIndex            int      `json:"viscosity_index"`
+	ViscosityPaSAt40C         float64  `json:"viscosity_pas_at_40c"`
+	PressureViscosityCoeff    float64  `json:"pressure_viscosity_coefficient"`
+	PourPointCelsius          float64  `json:"pour_point_celsius"`
+	FlashPointCelsius         float64  `json:"flash_point_celsius"`
+	OxidationStability        float64  `json:"oxidation_stability_index"`
+	AntiWearPerformance       float64  `json:"anti_wear_performance"`
+	LoadCarryingCapacity      float64  `json:"load_carrying_capacity"`
+	CorrosionInhibition       float64  `json:"corrosion_inhibition"`
+	FrictionCoefficientDry    float64  `json:"friction_coefficient_dry"`
+	FrictionCoefficientLubed  float64  `json:"friction_coefficient_lubricated"`
+	LubricationEffectiveness  float64  `json:"lubrication_effectiveness_factor"`
+	EHLBoostFactor            float64  `json:"ehl_boost_factor"`
+	WearReductionRatio        float64  `json:"wear_reduction_ratio"`
+	DegradationRate           float64  `json:"degradation_rate_per_1000h"`
+	MaxLubricationLifeHours   float64  `json:"max_lubrication_life_hours"`
+	HistoricalNote            string   `json:"historical_note"`
+	TypicalApplications       []string `json:"typical_applications"`
+	TypicalSourceRegions      []string `json:"typical_source_regions"`
+}
+
+type LubricantsConfig struct {
+	Lubricants                     []Lubricant       `json:"lubricants"`
+	CategoryDefinitions            map[string]string `json:"category_definitions"`
+	RecommendedLubricationFreq     map[string]float64 `json:"recommended_lubrication_frequency_hours"`
+	lubricantIndex                 map[string]Lubricant
+}
+
 var AppConfig *Config
 
 func Load(path string) error {
@@ -130,6 +197,14 @@ func Load(path string) error {
 
 	if err := loadLubricationParams("config/lubrication_params.json", &cfg.Lubrication); err != nil {
 		return fmt.Errorf("加载润滑参数失败: %w", err)
+	}
+
+	if err := loadMaterialsConfig("config/bearing_materials.json", &cfg.Materials); err != nil {
+		return fmt.Errorf("加载轴承材料配置失败: %w", err)
+	}
+
+	if err := loadLubricantsConfig("config/lubricants.json", &cfg.Lubricants); err != nil {
+		return fmt.Errorf("加载润滑剂配置失败: %w", err)
 	}
 
 	AppConfig = cfg
@@ -156,6 +231,99 @@ func loadLubricationParams(path string, params *LubricationConfig) error {
 		return fmt.Errorf("解析润滑参数失败: %w", err)
 	}
 	return nil
+}
+
+func loadMaterialsConfig(path string, cfg *BearingMaterialsConfig) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("读取轴承材料文件失败: %w", err)
+	}
+	if err := json.Unmarshal(data, cfg); err != nil {
+		return fmt.Errorf("解析轴承材料配置失败: %w", err)
+	}
+	cfg.BuildIndex()
+	return nil
+}
+
+func loadLubricantsConfig(path string, cfg *LubricantsConfig) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("读取润滑剂配置文件失败: %w", err)
+	}
+	if err := json.Unmarshal(data, cfg); err != nil {
+		return fmt.Errorf("解析润滑剂配置失败: %w", err)
+	}
+	cfg.BuildIndex()
+	return nil
+}
+
+func (bm *BearingMaterialsConfig) BuildIndex() {
+	bm.materialIndex = make(map[string]BearingMaterial, len(bm.Materials))
+	for _, m := range bm.Materials {
+		bm.materialIndex[m.Code] = m
+	}
+}
+
+func (bm *BearingMaterialsConfig) GetMaterial(code string) (BearingMaterial, bool) {
+	m, ok := bm.materialIndex[code]
+	return m, ok
+}
+
+func (bm *BearingMaterialsConfig) ListByEra(era string) []BearingMaterial {
+	result := make([]BearingMaterial, 0)
+	for _, m := range bm.Materials {
+		if m.Era == era {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+func (bm *BearingMaterialsConfig) ListByCategory(category string) []BearingMaterial {
+	result := make([]BearingMaterial, 0)
+	for _, m := range bm.Materials {
+		if m.Category == category {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+func (lc *LubricantsConfig) BuildIndex() {
+	lc.lubricantIndex = make(map[string]Lubricant, len(lc.Lubricants))
+	for _, l := range lc.Lubricants {
+		lc.lubricantIndex[l.Code] = l
+	}
+}
+
+func (lc *LubricantsConfig) GetLubricant(code string) (Lubricant, bool) {
+	l, ok := lc.lubricantIndex[code]
+	return l, ok
+}
+
+func (lc *LubricantsConfig) ListByCategory(category string) []Lubricant {
+	result := make([]Lubricant, 0)
+	for _, l := range lc.Lubricants {
+		if l.Category == category {
+			result = append(result, l)
+		}
+	}
+	return result
+}
+
+func (lc *LubricantsConfig) ListByEra(era string) []Lubricant {
+	result := make([]Lubricant, 0)
+	for _, l := range lc.Lubricants {
+		if l.Era == era || l.Era == "ancient" || l.Era == "ancient_rare" {
+			if era == "ancient" || (era == "modern" && l.Era == "modern") || (era == "ancient" && (l.Era == "ancient" || l.Era == "ancient_rare")) {
+				if era == "modern" && l.Era != "modern" {
+					continue
+				}
+				result = append(result, l)
+			}
+		}
+	}
+	return result
 }
 
 func (d DatabaseConfig) DSN() string {

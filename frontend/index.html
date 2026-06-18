@@ -42,6 +42,9 @@
         <button class="nav-btn" data-view="oilfilm">油膜云图</button>
         <button class="nav-btn" data-view="prediction">寿命预测</button>
         <button class="nav-btn" data-view="alerts">告警记录</button>
+        <button class="nav-btn new-feature" data-view="material-compare">🏆 材料对比</button>
+        <button class="nav-btn new-feature" data-view="lubricant">🧴 润滑剂分析</button>
+        <button class="nav-btn new-feature" data-view="maintenance">🛠️ 虚拟维护</button>
     </nav>
 
     <main class="main-content">
@@ -320,6 +323,194 @@
                 </table>
             </div>
         </section>
+
+        <section class="view-section" id="view-material-compare">
+            <div class="view-header">
+                <h2>🏆 材料磨损寿命对比分析</h2>
+                <div class="view-controls">
+                    <span class="feature-tag">新功能</span>
+                    <label>基准轴承:
+                        <select id="material-compare-bearing" class="select-input small"></select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature-layout">
+                <div class="feature-left">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>选择对比材料</h3>
+                            <span class="selection-count">已选 <b id="material-selected-count">0</b> 种（至少2种）</span>
+                        </div>
+                        <div id="material-list-container" class="scrollable-panel"></div>
+                        <div class="action-bar">
+                            <button class="btn btn-primary" id="btn-run-material-compare">▶ 运行磨损寿命仿真</button>
+                            <span id="material-compare-status" class="status-text">待运行</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>⚔️ 跨时代对比：古代 vs 现代</h3>
+                        <p class="section-desc">相同工况下，直观对比古代工匠智慧与现代精密制造的差距</p>
+                        <div class="cross-era-controls">
+                            <div class="form-row">
+                                <label>轴承直径(mm): <input type="number" id="cross-diameter" value="150" min="50" max="500"></label>
+                                <label>载荷(N): <input type="number" id="cross-load" value="5000" min="100" max="50000"></label>
+                                <label>转速(RPM): <input type="number" id="cross-speed" value="15" min="1" max="100"></label>
+                            </div>
+                        </div>
+                        <div class="action-bar">
+                            <button class="btn btn-secondary" id="btn-run-cross-era">⚡ 开始跨时代对比</button>
+                            <span id="cross-era-status" class="status-text">待运行</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-right">
+                    <div class="card result-card" id="cross-era-results">
+                        <h3>📈 跨时代对比结果</h3>
+                        <p class="section-desc">运行后将在此显示古代最优与现代最优方案的直观对比</p>
+                    </div>
+
+                    <div class="card chart-card">
+                        <canvas id="material-compare-chart"></canvas>
+                    </div>
+
+                    <div class="card result-card" id="material-compare-results">
+                        <h3>📊 材料对比详细结果</h3>
+                        <p class="section-desc">选择材料并运行仿真后，将在此显示详细对比表格和分析结论</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="view-section" id="view-lubricant">
+            <div class="view-header">
+                <h2>🧴 润滑剂对寿命影响分析</h2>
+                <div class="view-controls">
+                    <span class="feature-tag">新功能</span>
+                    <label>基准材料:
+                        <select id="base-material-select" class="select-input small"></select>
+                    </label>
+                </div>
+            </div>
+
+            <div class="feature-layout">
+                <div class="feature-left">
+                    <div class="card">
+                        <div class="card-header-flex">
+                            <h3>选择润滑剂</h3>
+                            <span class="selection-count">已选 <b id="lubricant-selected-count">0</b> 种（至少2种）</span>
+                        </div>
+                        <div id="lubricant-list-container" class="scrollable-panel"></div>
+                        <div class="action-bar">
+                            <button class="btn btn-primary" id="btn-run-lubricant-compare">▶ 分析润滑剂影响</button>
+                            <span id="lubricant-compare-status" class="status-text">待运行</span>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📖 古代润滑剂小知识</h3>
+                        <ul class="knowledge-list">
+                            <li><b>桐油</b>：中国古代最重要的工业油料，干燥快、附着力强，宋代已大规模用于车船润滑</li>
+                            <li><b>芝麻油</b>：汉代从西域传入，稳定性极佳，古代皇家观象仪器首选</li>
+                            <li><b>猪油/牛油</b>：易得的冬季润滑剂，承载能力强但易酸败</li>
+                            <li><b>鲸油</b>：明清海贸时代进口珍品，低温性能好，仅供皇家使用</li>
+                            <li><b>矿物油</b>：20世纪石油工业产物，从此润滑进入现代工程</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="feature-right">
+                    <div class="card chart-card">
+                        <canvas id="lubricant-compare-chart"></canvas>
+                    </div>
+
+                    <div class="card result-card" id="lubricant-compare-results">
+                        <h3>📊 润滑剂性能详细对比</h3>
+                        <p class="section-desc">选择润滑剂并运行分析后，将在此显示减磨效果、寿命提升、润滑状态等数据</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="view-section" id="view-maintenance">
+            <div class="view-header">
+                <h2>🛠️ 公众虚拟维护筒车体验</h2>
+                <div class="view-controls">
+                    <span class="feature-tag">新功能 · 互动体验</span>
+                    <label>
+                        您的称呼:
+                        <input type="text" id="operator-name-input" class="select-input small" placeholder="如：李工程师（可选）" maxlength="20">
+                    </label>
+                </div>
+            </div>
+
+            <div class="maintenance-layout">
+                <div class="maint-col maint-col-status">
+                    <div class="card dashboard-card" id="bearing-info-panel">
+                        <h3>📊 轴承健康仪表盘</h3>
+                        <div class="loading-text">加载轴承状态...</div>
+                    </div>
+
+                    <div class="card plan-card" id="maintenance-plan-panel">
+                        <div class="loading-text">生成智能维护建议中...</div>
+                    </div>
+
+                    <div class="card history-card" id="maintenance-history">
+                        <div class="empty-history">加载维护记录...</div>
+                    </div>
+                </div>
+
+                <div class="maint-col maint-col-actions">
+                    <div class="card action-card replace-card">
+                        <h3>🔧 更换轴承材料</h3>
+                        <p class="section-desc">模拟更换不同材料的轴承轴瓦，对比延寿效果</p>
+
+                        <div class="form-group">
+                            <label>选择新材料:</label>
+                            <select id="replacement-material" class="select-input"></select>
+                        </div>
+
+                        <div class="action-buttons-row">
+                            <button class="btn btn-secondary" id="btn-preview-replace">🔍 预测效果</button>
+                            <button class="btn btn-primary" id="btn-execute-replace">✅ 确认更换</button>
+                        </div>
+                        <div id="replace-status" class="status-text">请选择材料</div>
+                        <div id="replace-preview"></div>
+                    </div>
+
+                    <div class="card action-card lube-card">
+                        <h3>🛢️ 添加润滑剂</h3>
+                        <p class="section-desc">古代工匠的日常工作：定期为轴瓦添加润滑剂</p>
+
+                        <div class="form-row triple">
+                            <div class="form-group">
+                                <label>润滑剂类型:</label>
+                                <select id="lubricant-type" class="select-input"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>添加量(ml):</label>
+                                <input type="number" id="lubricant-amount" class="select-input" value="200" min="50" max="2000" step="50">
+                            </div>
+                        </div>
+
+                        <div class="action-buttons-row">
+                            <button class="btn btn-secondary" id="btn-preview-lube">🔍 预测效果</button>
+                            <button class="btn btn-primary" id="btn-execute-lube">✅ 确认添加</button>
+                        </div>
+                        <div id="lube-status" class="status-text">请选择润滑剂</div>
+                        <div id="lube-preview"></div>
+                    </div>
+
+                    <div class="card stats-card" id="exp-stats">
+                        <h4>🎮 您的维护体验记录</h4>
+                        <div class="empty-history">开始您的第一次虚拟维护操作吧！</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <script src="js/api.js"></script>
@@ -328,6 +519,9 @@
     <script src="js/bearing_panel.js"></script>
     <script src="js/oilfilm-view.js"></script>
     <script src="js/charts.js"></script>
+    <script src="js/material_compare.js"></script>
+    <script src="js/lubricant_analysis.js"></script>
+    <script src="js/virtual_maintenance.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>

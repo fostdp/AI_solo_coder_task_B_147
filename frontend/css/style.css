@@ -1039,3 +1039,734 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-primary);
 }
+
+/* ============ 新功能 Feature 样式 ============ */
+
+.nav-btn.new-feature {
+    position: relative;
+    background: linear-gradient(135deg, rgba(255, 183, 77, 0.15), rgba(255, 152, 0, 0.1));
+    border-color: var(--accent-secondary);
+}
+
+.nav-btn.new-feature::after {
+    content: "NEW";
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--accent-secondary);
+    color: #1a1a2e;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 5px;
+    border-radius: 8px;
+    letter-spacing: 0.5px;
+}
+
+.feature-tag {
+    display: inline-block;
+    background: linear-gradient(135deg, var(--accent-secondary), #ff9800);
+    color: #1a1a2e;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+    margin-left: 8px;
+}
+
+/* ============ 对比分析视图布局 ============ */
+
+.feature-layout {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    gap: 20px;
+    height: 100%;
+}
+
+.feature-left {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.feature-right {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.scrollable-panel {
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+}
+
+.scrollable-panel .material-item,
+.scrollable-panel .lubricant-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: background 0.2s, border-left 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.scrollable-panel .material-item:last-child,
+.scrollable-panel .lubricant-item:last-child {
+    border-bottom: none;
+}
+
+.scrollable-panel .material-item:hover,
+.scrollable-panel .lubricant-item:hover {
+    background: rgba(100, 181, 246, 0.08);
+}
+
+.scrollable-panel .material-item.selected,
+.scrollable-panel .lubricant-item.selected {
+    background: rgba(100, 181, 246, 0.15);
+    border-left-color: var(--accent-primary);
+}
+
+.scrollable-panel .item-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.scrollable-panel .item-meta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.scrollable-panel .item-era {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 8px;
+    margin-right: 6px;
+}
+
+.item-era.ancient {
+    background: rgba(161, 136, 127, 0.2);
+    color: #a1887f;
+}
+
+.item-era.modern {
+    background: rgba(100, 181, 246, 0.2);
+    color: #64b5f6;
+}
+
+.card-header-flex {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.selection-count {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 3px 10px;
+    border-radius: 10px;
+}
+
+.action-bar {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.action-buttons-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.status-text {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    padding: 8px 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.result-card,
+.chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.chart-card canvas {
+    width: 100% !important;
+    max-height: 340px;
+}
+
+/* ============ 跨时代对比控件 ============ */
+
+.cross-era-controls {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.form-row.triple {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.form-group label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    font-weight: 500;
+}
+
+.form-group select,
+.form-group input {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+    border-color: var(--accent-primary);
+}
+
+.knowledge-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.knowledge-list li {
+    padding: 10px 12px;
+    border-left: 3px solid var(--accent-secondary);
+    background: var(--bg-secondary);
+    margin-bottom: 8px;
+    border-radius: 0 6px 6px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.section-desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+/* ============ 磨损排名徽章 ============ */
+
+.rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: 12px;
+    color: #fff;
+}
+
+.rank-1 { background: linear-gradient(135deg, #ffd700, #ffb300); }
+.rank-2 { background: linear-gradient(135deg, #c0c0c0, #9e9e9e); }
+.rank-3 { background: linear-gradient(135deg, #cd7f32, #a0522d); }
+
+/* ============ 润滑状态徽章 ============ */
+
+.lube-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.lube-badge.full-film {
+    background: rgba(76, 175, 80, 0.18);
+    color: #66bb6a;
+}
+
+.lube-badge.mixed {
+    background: rgba(255, 193, 7, 0.18);
+    color: #ffca28;
+}
+
+.lube-badge.boundary {
+    background: rgba(244, 67, 54, 0.18);
+    color: #ef5350;
+}
+
+/* ============ 跨时代对比大数字 ============ */
+
+.cross-era-lift {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(76, 175, 80, 0.08));
+    border-radius: 10px;
+    border: 1px solid rgba(100, 181, 246, 0.3);
+    margin: 12px 0;
+}
+
+.cross-era-lift .lift-number {
+    font-size: 42px;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-primary), #66bb6a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+
+.cross-era-lift .lift-unit {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.cross-era-lift .lift-desc {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-left: auto;
+    max-width: 220px;
+    line-height: 1.6;
+}
+
+/* ============ 虚拟维护视图布局 ============ */
+
+.maintenance-layout {
+    display: grid;
+    grid-template-columns: 420px 1fr;
+    gap: 20px;
+    height: 100%;
+}
+
+.maint-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.dashboard-card,
+.plan-card,
+.history-card,
+.action-card,
+.stats-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+/* 健康仪表盘 */
+.health-gauge {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    margin: 0 auto 12px;
+}
+
+.health-gauge svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+
+.health-gauge .gauge-bg {
+    fill: none;
+    stroke: var(--border-color);
+    stroke-width: 12;
+}
+
+.health-gauge .gauge-fill {
+    fill: none;
+    stroke-width: 12;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s ease, stroke 0.5s;
+}
+
+.health-gauge .gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.health-gauge .gauge-value {
+    font-size: 38px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.health-gauge .gauge-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 4px;
+}
+
+.health-good { color: #66bb6a; }
+.health-warn { color: #ffca28; }
+.health-crit { color: #ef5350; }
+
+/* 建议列表 */
+.plan-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.plan-list li {
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-left: 3px solid var(--accent-primary);
+}
+
+.plan-list li.urgent {
+    border-left-color: #ef5350;
+    background: rgba(239, 83, 80, 0.06);
+}
+
+.plan-list li .plan-priority {
+    display: inline-block;
+    font-size: 10px;
+    padding: 1px 7px;
+    border-radius: 8px;
+    margin-right: 6px;
+    font-weight: 600;
+}
+
+.plan-priority.high { background: rgba(239, 83, 80, 0.2); color: #ef5350; }
+.plan-priority.medium { background: rgba(255, 193, 7, 0.2); color: #ffca28; }
+.plan-priority.low { background: rgba(76, 175, 80, 0.2); color: #66bb6a; }
+
+/* 历史记录 */
+.history-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    align-items: flex-start;
+}
+
+.history-item .history-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.history-icon.replace {
+    background: rgba(100, 181, 246, 0.18);
+}
+
+.history-icon.lubricate {
+    background: rgba(255, 183, 77, 0.18);
+}
+
+.history-item .history-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.history-item .history-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+}
+
+.history-item .history-time {
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+
+.history-item .history-detail {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    line-height: 1.5;
+}
+
+/* 操作卡片 */
+.replace-card,
+.lube-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+}
+
+.preview-card {
+    background: linear-gradient(135deg, rgba(100, 181, 246, 0.06), rgba(76, 175, 80, 0.04));
+    border: 1px dashed rgba(100, 181, 246, 0.4);
+    border-radius: 10px;
+    padding: 14px;
+    margin-top: 12px;
+}
+
+.preview-card .preview-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.preview-cell {
+    background: var(--bg-primary);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+
+.preview-cell .cell-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.preview-cell .cell-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.preview-cell .cell-value.positive {
+    color: #66bb6a;
+}
+
+.preview-cell .cell-delta {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+.preview-cell .cell-delta.up {
+    color: #66bb6a;
+}
+
+/* 统计卡片 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.stat-item {
+    text-align: center;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 12px 8px;
+}
+
+.stat-item .stat-number {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--accent-primary);
+    line-height: 1;
+}
+
+.stat-item .stat-label {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    margin-top: 6px;
+}
+
+/* 结果表格 */
+.result-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+.result-table th {
+    text-align: left;
+    padding: 8px 10px;
+    background: var(--bg-secondary);
+    color: var(--text-tertiary);
+    font-weight: 600;
+    font-size: 11px;
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.result-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.result-table tr:hover td {
+    background: rgba(100, 181, 246, 0.04);
+}
+
+.result-table .num {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* 通用按钮变体 */
+.btn-primary,
+.btn-success,
+.btn-secondary {
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-primary), #1976d2);
+    color: #fff;
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(100, 181, 246, 0.35);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #66bb6a, #43a047);
+    color: #fff;
+}
+
+.btn-success:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(102, 187, 106, 0.35);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.btn-primary:disabled,
+.btn-success:disabled,
+.btn-secondary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ============ 响应式适配 ============ */
+
+@media (max-width: 1400px) {
+    .feature-layout {
+        grid-template-columns: 320px 1fr;
+    }
+    .maintenance-layout {
+        grid-template-columns: 380px 1fr;
+    }
+    .form-row.triple {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 1100px) {
+    .feature-layout,
+    .maintenance-layout {
+        grid-template-columns: 1fr;
+    }
+    .feature-left,
+    .maint-col-status {
+        max-height: none;
+    }
+    .cross-era-lift {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .cross-era-lift .lift-desc {
+        margin-left: 0;
+        max-width: none;
+    }
+}
+
+@media (max-width: 700px) {
+    .form-row,
+    .form-row.triple,
+    .preview-grid,
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .scrollable-panel {
+        max-height: 300px;
+    }
+    .health-gauge {
+        width: 140px;
+        height: 140px;
+    }
+    .health-gauge .gauge-value {
+        font-size: 28px;
+    }
+}

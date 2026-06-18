@@ -10,6 +10,7 @@ Ancient Noria Wheel Bearing Wear Simulation & Life Prediction System
 
 - [系统架构](#系统架构)
 - [模块说明](#模块说明)
+- [新增功能（Feature）](#新增功能feature)
 - [快速部署](#快速部署)
 - [服务端口](#服务端口)
 - [传感器模拟器](#传感器模拟器)
