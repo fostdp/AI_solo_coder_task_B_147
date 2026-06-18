@@ -519,6 +519,146 @@ func (mm *MaintenanceManager) reductionPct(oldVal, newVal float64) float64 {
 	return (oldVal - newVal) / oldVal * 100.0
 }
 
+type SmartRecommendation struct {
+	RecommendedMaterial   string
+	RecommendedMaterialName string
+	RecommendedLubricant  string
+	RecommendedLubricantName string
+	RecommendedLubricantML float64
+	Reasoning             string
+	EstimatedLifeHours    float64
+	EstimatedCostCNY      float64
+}
+
+func (mm *MaintenanceManager) SmartRecommend(ctx context.Context, bearingID int) (*SmartRecommendation, error) {
+	bearing, err := mm.db.GetBearingByID(ctx, bearingID)
+	if err != nil {
+		return nil, fmt.Errorf("获取轴承信息失败: %w", err)
+	}
+
+	status, err := mm.db.GetBearingLatestStatusByID(ctx, bearingID)
+	if err != nil {
+		return nil, fmt.Errorf("获取轴承状态失败: %w", err)
+	}
+
+	loadN := 5000.0
+	if status.RadialLoad != nil {
+		loadN = *status.RadialLoad
+	}
+	speedRPM := 15.0
+	if status.RotationalSpeed != nil {
+		speedRPM = *status.RotationalSpeed
+	}
+	tempC := 40.0
+	if status.Temperature != nil {
+		tempC = *status.Temperature
+	}
+
+	currentWear := 0.0
+	if status.TotalWearMicrom != nil {
+		currentWear = *status.TotalWearMicrom
+	}
+	wearPct := currentWear / bearing.WearLimitMicrom * 100.0
+
+	materialCode := mm.guessMaterialCode(bearing)
+	allMaterials := mm.suggestedReplacementMaterials(wearPct)
+	allLubricants := mm.suggestedLubricants(materialCode)
+
+	bestMaterialCode := ""
+	bestLife := 0.0
+	bestMaterialName := ""
+	for _, m := range allMaterials {
+		code, _ := m["code"].(string)
+		name, _ := m["name"].(string)
+		codes := []string{code}
+		compareResult := mm.engine.CompareMaterials(bearing, codes, loadN, speedRPM, tempC, 8760.0)
+		if len(compareResult.Items) > 0 && compareResult.Items[0].PredictedLifeHours > bestLife {
+			bestLife = compareResult.Items[0].PredictedLifeHours
+			bestMaterialCode = code
+			bestMaterialName = name
+		}
+	}
+
+	bestLubricantCode := "vegetable_tung"
+	bestLubricantName := "桐油"
+	bestLubricantML := 100.0
+	if len(allLubricants) > 0 {
+		bestLubricantCode, _ = allLubricants[0]["code"].(string)
+		bestLubricantName, _ = allLubricants[0]["name"].(string)
+	}
+
+	reasoning := fmt.Sprintf(
+		"当前磨损 %.1f%% (%.1fμm)。推荐更换为 %s，配合 %s %.0fml 润滑。预计寿命延长 %.0f 小时。",
+		wearPct, currentWear, bestMaterialName, bestLubricantName, bestLubricantML, bestLife,
+	)
+
+	costMap := map[string]float64{
+		"wood_oak":              50.0,
+		"wood_ironbark":         120.0,
+		"wood_wrapped_copper":   350.0,
+		"bronze_ancient":        1000.0,
+		"cast_iron_ancient":     550.0,
+		"modern_bushing_babbit": 2250.0,
+		"modern_ball_bearing":   1400.0,
+		"modern_roller_bearing": 3500.0,
+	}
+	lubCostPerLiter := map[string]float64{
+		"vegetable_tung":        80.0,
+		"vegetable_rape":        15.0,
+		"vegetable_sesame":      40.0,
+		"animal_lard":           25.0,
+		"animal_beef_tallow":    30.0,
+	}
+
+	estCost := costMap[bestMaterialCode]
+	if lubCost, ok := lubCostPerLiter[bestLubricantCode]; ok {
+		estCost += lubCost * bestLubricantML / 1000.0
+	}
+
+	return &SmartRecommendation{
+		RecommendedMaterial:      bestMaterialCode,
+		RecommendedMaterialName:  bestMaterialName,
+		RecommendedLubricant:     bestLubricantCode,
+		RecommendedLubricantName: bestLubricantName,
+		RecommendedLubricantML:   bestLubricantML,
+		Reasoning:                reasoning,
+		EstimatedLifeHours:       bestLife,
+		EstimatedCostCNY:         estCost,
+	}, nil
+}
+
+func (mm *MaintenanceManager) OneClickReplaceBearing(ctx context.Context, bearingID int, operatorName *string) (*models.MaintenanceRecord, error) {
+	recommendation, err := mm.SmartRecommend(ctx, bearingID)
+	if err != nil {
+		return nil, fmt.Errorf("智能推荐失败: %w", err)
+	}
+
+	params := ReplaceBearingParams{
+		BearingID:       bearingID,
+		NewMaterialCode: recommendation.RecommendedMaterial,
+		OperatorName:    operatorName,
+		Notes:           &recommendation.Reasoning,
+	}
+
+	return mm.ExecuteBearingReplacement(ctx, params)
+}
+
+func (mm *MaintenanceManager) OneClickAddLubricant(ctx context.Context, bearingID int, operatorName *string) (*models.MaintenanceRecord, error) {
+	recommendation, err := mm.SmartRecommend(ctx, bearingID)
+	if err != nil {
+		return nil, fmt.Errorf("智能推荐失败: %w", err)
+	}
+
+	params := AddLubricantParams{
+		BearingID:     bearingID,
+		LubricantCode: recommendation.RecommendedLubricant,
+		AmountML:      recommendation.RecommendedLubricantML,
+		OperatorName:  operatorName,
+	}
+
+	return mm.ExecuteLubricantAddition(ctx, params)
+}
+
 func containsAny(s string, keywords ...string) bool {
 	sLower := toLower(s)
 	for _, kw := range keywords {

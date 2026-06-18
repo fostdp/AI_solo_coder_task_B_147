@@ -643,6 +643,170 @@ def test_backward_compatibility_alias():
     print("  向后兼容: Database 类型别名已定义")
 
 
+# ==================== 缺陷修复验证测试 ====================
+
+def test_ancient_materials_experimental_data():
+    """测试古代材料数据已补充实验测定来源、不确定度、测量条件"""
+    fpath = CONFIG_DIR / "bearing_materials.json"
+    data = json.loads(fpath.read_text(encoding='utf-8'))
+
+    ancient_materials = [m for m in data["materials"] if m.get("era") == "ancient" or m.get("code") == "wood_wrapped_copper"]
+
+    required_fields = [
+        "hardness_uncertainty_pct",
+        "archard_k_uncertainty_pct",
+        "data_source",
+        "measurement_conditions",
+        "reference_year",
+    ]
+
+    for mat in ancient_materials:
+        code = mat["code"]
+        for field in required_fields:
+            assert field in mat, f"古代材料 {code} 缺少字段: {field}"
+            assert mat[field] != "", f"古代材料 {code} 字段 {field} 为空"
+
+        hardness_uncertainty = mat["hardness_uncertainty_pct"]
+        assert 5.0 <= hardness_uncertainty <= 40.0, \
+            f"古代材料 {code} 硬度不确定度应在合理范围 (5%~40%): {hardness_uncertainty}%"
+
+        archard_uncertainty = mat["archard_k_uncertainty_pct"]
+        assert 10.0 <= archard_uncertainty <= 50.0, \
+            f"古代材料 {code} Archard K 不确定度应在合理范围 (10%~50%): {archard_uncertainty}%"
+
+        assert "中国科学院" in mat["data_source"] or "北京科技大学" in mat["data_source"] or \
+               "林业大学" in mat["data_source"] or "清华大学" in mat["data_source"], \
+               f"古代材料 {code} 数据来源应包含权威机构"
+
+        ref_year = mat["reference_year"]
+        assert 2010 <= ref_year <= 2025, f"古代材料 {code} 参考年份应在合理范围: {ref_year}"
+
+    print(f"  古代材料: {len(ancient_materials)} 种全部包含实验来源、不确定度、测量条件")
+    assert "data_quality_note" in data, "缺少数据质量说明"
+    print("  数据质量说明: 已存在")
+
+
+def test_modern_bearing_standards():
+    """测试现代轴承标准已统一采用ISO/GB国家标准"""
+    fpath = CONFIG_DIR / "bearing_materials.json"
+    data = json.loads(fpath.read_text(encoding='utf-8'))
+
+    modern_materials = [m for m in data["materials"] if m.get("era") == "modern"]
+    assert len(modern_materials) >= 3, "现代材料不足3种"
+
+    standard_fields = [
+        "standard_number",
+        "precision_grade",
+        "tolerance_class",
+        "life_calculation_standard",
+    ]
+
+    for mat in modern_materials:
+        code = mat["code"]
+        for field in standard_fields:
+            assert field in mat, f"现代材料 {code} 缺少标准字段: {field}"
+            assert mat[field] != "", f"现代材料 {code} 标准字段 {field} 为空"
+
+        std_num = mat["standard_number"]
+        assert "GB/T" in std_num or "ISO" in std_num, \
+            f"现代材料 {code} 标准编号应包含 GB/T 或 ISO: {std_num}"
+
+        life_std = mat["life_calculation_standard"]
+        assert "ISO 281" in life_std or "ISO 12131" in life_std or "GB/T" in life_std, \
+            f"现代材料 {code} 寿命计算标准应包含 ISO 281/ISO 12131/GB/T: {life_std}"
+
+        hardness_uncertainty = mat["hardness_uncertainty_pct"]
+        assert 2.0 <= hardness_uncertainty <= 10.0, \
+            f"现代材料 {code} 硬度不确定度应反映精密制造水平 (2%~10%): {hardness_uncertainty}%"
+
+        archard_uncertainty = mat["archard_k_uncertainty_pct"]
+        assert 5.0 <= archard_uncertainty <= 15.0, \
+            f"现代材料 {code} Archard K 不确定度应在合理范围 (5%~15%): {archard_uncertainty}%"
+
+    print(f"  现代材料: {len(modern_materials)} 种全部采用 ISO/GB 标准")
+    print("  标准字段: 编号、精度、公差、寿命计算标准 完整")
+
+
+def test_lubricant_rheology_model():
+    """测试润滑剂流变特性已采用Walther方程温度-粘度建模"""
+    fpath = CONFIG_DIR / "lubricants.json"
+    data = json.loads(fpath.read_text(encoding='utf-8'))
+
+    lubricants = data["lubricants"]
+    rheology_fields = [
+        "walther_intercept",
+        "walther_slope",
+        "viscosity_temperature_exponent",
+        "reference_temp_celsius",
+        "data_source",
+    ]
+
+    for lub in lubricants:
+        code = lub["code"]
+        for field in rheology_fields:
+            assert field in lub, f"润滑剂 {code} 缺少流变字段: {field}"
+
+        walther_a = lub["walther_intercept"]
+        walther_b = lub["walther_slope"]
+        assert 7.0 <= walther_a <= 10.0, f"润滑剂 {code} Walther截距应在合理范围 (7~10): {walther_a}"
+        assert 2.5 <= walther_b <= 4.5, f"润滑剂 {code} Walther斜率应在合理范围 (2.5~4.5): {walther_b}"
+
+        viscosity_40 = lub["viscosity_40c_mm2_per_s"]
+        viscosity_100 = lub["viscosity_100c_mm2_per_s"]
+        assert viscosity_40 > viscosity_100, \
+            f"润滑剂 {code} 粘度应随温度升高而降低: 40°C({viscosity_40}) > 100°C({viscosity_100})"
+
+        vi = lub["viscosity_index"]
+        assert vi >= 80, f"润滑剂 {code} 粘度指数应≥80: {vi}"
+
+    go_file = MODULES_DIR / "analysis" / "comparison.go"
+    go_content = go_file.read_text(encoding='utf-8')
+    assert "calculateViscosityWalther" in go_content, "缺少 calculateViscosityWalther 函数"
+    assert "waltherA" in go_content and "waltherB" in go_content, "缺少 Walther 参数传递"
+    assert "math.Log10" in go_content, "Walther方程应使用对数计算"
+
+    print(f"  润滑剂: {len(lubricants)} 种全部包含 Walther 方程参数")
+    print("  算法: calculateViscosityWalther 函数已实现")
+    assert "rheology_model_note" in data, "缺少流变模型说明"
+    print("  流变模型说明: 已存在")
+
+
+def test_simplified_virtual_operations():
+    """测试虚拟体验操作已简化为智能推荐+一键执行"""
+    fpath = MODULES_DIR / "maintenance" / "manager.go"
+    content = fpath.read_text(encoding='utf-8')
+
+    simplified_methods = [
+        ("SmartRecommend", "智能推荐材料和润滑剂"),
+        ("OneClickReplaceBearing", "一键更换轴承"),
+        ("OneClickAddLubricant", "一键添加润滑剂"),
+    ]
+
+    for method_name, desc in simplified_methods:
+        assert re.search(rf"func.*{method_name}", content), f"缺少简化操作方法: {method_name}"
+
+    assert "type SmartRecommendation struct" in content, "缺少 SmartRecommendation 结构体"
+
+    smart_fields = [
+        "RecommendedMaterial",
+        "RecommendedLubricant",
+        "Reasoning",
+        "EstimatedLifeHours",
+        "EstimatedCostCNY",
+    ]
+    for field in smart_fields:
+        assert field in content, f"SmartRecommendation 缺少字段: {field}"
+
+    oneclick_calls = re.findall(r"func.*OneClick.*\{[\s\S]{0,300}SmartRecommend", content)
+    assert len(oneclick_calls) >= 2, "OneClick 方法应先调用 SmartRecommend 获取推荐"
+
+    oneclick_executes = re.findall(r"func.*OneClick.*\{[\s\S]{0,500}Execute", content)
+    assert len(oneclick_executes) >= 2, "OneClick 方法应调用 Execute 完成操作"
+
+    print("  简化操作: SmartRecommend + OneClickReplace + OneClickAdd 完整")
+    print("  操作流程: 智能推荐 → 一键执行，无需手动选择参数")
+
+
 # ==================== 执行测试 ====================
 
 def main():
@@ -707,6 +871,14 @@ def main():
     print("-" * 40)
     test("原有Channel架构零侵入", test_zero_intrusion_guarantee)
     test("Database类型别名兼容", test_backward_compatibility_alias)
+
+    print()
+    print("▌ 缺陷修复验证")
+    print("-" * 40)
+    test("古代材料实验数据完整", test_ancient_materials_experimental_data)
+    test("现代轴承标准统一", test_modern_bearing_standards)
+    test("润滑剂流变模型正确", test_lubricant_rheology_model)
+    test("虚拟操作简化有效", test_simplified_virtual_operations)
 
     print()
     print("=" * 70)

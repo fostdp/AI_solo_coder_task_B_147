@@ -119,18 +119,27 @@ type BearingMaterial struct {
 	HardnessHVMin           float64  `json:"hardness_hv_min"`
 	HardnessHVNominal       float64  `json:"hardness_hv_nominal"`
 	HardnessHVMax           float64  `json:"hardness_hv_max"`
+	HardnessUncertaintyPct  float64  `json:"hardness_uncertainty_pct"`
 	DensityKgPerM3          float64  `json:"density_kg_per_m3"`
 	ElasticModulusPa        float64  `json:"elastic_modulus_pa"`
 	PoissonRatio            float64  `json:"poisson_ratio"`
 	ThermalConductivity     float64  `json:"thermal_conductivity_w_per_mk"`
 	SurfaceRoughnessRMS     float64  `json:"surface_roughness_rms_meters"`
 	ArchardKBase            float64  `json:"archard_k_base"`
+	ArchardKUncertaintyPct  float64  `json:"archard_k_uncertainty_pct"`
 	WearResistanceFactor    float64  `json:"wear_resistance_factor"`
 	CorrosionResistance     float64  `json:"corrosion_resistance"`
 	TemperatureLimitCelsius float64  `json:"temperature_limit_celsius"`
 	ManufacturingDifficulty float64  `json:"manufacturing_difficulty"`
 	HistoricalNote          string   `json:"historical_note"`
 	TypicalApplications     []string `json:"typical_applications"`
+	DataSource              string   `json:"data_source"`
+	MeasurementConditions   string   `json:"measurement_conditions"`
+	ReferenceYear           int      `json:"reference_year"`
+	StandardNumber          string   `json:"standard_number,omitempty"`
+	PrecisionGrade          string   `json:"precision_grade,omitempty"`
+	ToleranceClass          string   `json:"tolerance_class,omitempty"`
+	LifeCalculationStandard string   `json:"life_calculation_standard,omitempty"`
 }
 
 type BearingMaterialsConfig struct {
@@ -167,6 +176,11 @@ type Lubricant struct {
 	HistoricalNote            string   `json:"historical_note"`
 	TypicalApplications       []string `json:"typical_applications"`
 	TypicalSourceRegions      []string `json:"typical_source_regions"`
+	WaltherIntercept          float64  `json:"walther_intercept"`
+	WaltherSlope              float64  `json:"walther_slope"`
+	ViscosityTemperatureExponent float64 `json:"viscosity_temperature_exponent"`
+	ReferenceTempCelsius      float64  `json:"reference_temp_celsius"`
+	DataSource                string   `json:"data_source"`
 }
 
 type LubricantsConfig struct {

@@ -39,6 +39,9 @@ type simInput struct {
 	surfaceRMS      float64
 	elasticModPa    float64
 	viscosityPaS    float64
+	viscosity40C    float64
+	waltherA        float64
+	waltherB        float64
 	pressureCoeff   float64
 	ehlBoost        float64
 	wearReduction   float64
@@ -59,6 +62,34 @@ type simOutput struct {
 }
 
 const wearLimitDefaultUm = 500.0
+
+func (ce *ComparisonEngine) calculateViscosityWalther(tempCelsius, waltherA, waltherB, viscosity40C, viscosityPaS40C float64) float64 {
+	if tempCelsius <= -273.15 {
+		return viscosityPaS40C
+	}
+
+	kelvin := tempCelsius + 273.15
+	logKelvin := math.Log10(kelvin)
+	logLogVal := waltherA - waltherB*logKelvin
+
+	if logLogVal <= 0 {
+		return viscosityPaS40C
+	}
+
+	logVal := math.Pow(10, logLogVal)
+	kinematicViscosity := math.Pow(10, logVal) - 0.8
+
+	if kinematicViscosity <= 0 {
+		return viscosityPaS40C
+	}
+
+	ratio := kinematicViscosity / viscosity40C
+	if ratio <= 0 {
+		return viscosityPaS40C
+	}
+
+	return viscosityPaS40C * ratio
+}
 
 func (ce *ComparisonEngine) simulateWear(in simInput) simOutput {
 	out := simOutput{}
@@ -94,9 +125,20 @@ func (ce *ComparisonEngine) simulateWear(in simInput) simOutput {
 		viscosity = 0.03
 	}
 
-	refTemp := ce.wearParams.EHLReferenceTempCelsius
-	tempCorrection := math.Exp(-0.05 * (in.tempCelsius - refTemp) * 0.693 / 10.0)
-	effectiveViscosity := viscosity * tempCorrection
+	if in.waltherA > 0 && in.waltherB > 0 && in.viscosity40C > 0 {
+		viscosity = ce.calculateViscosityWalther(
+			in.tempCelsius,
+			in.waltherA,
+			in.waltherB,
+			in.viscosity40C,
+			in.viscosityPaS,
+		)
+	} else {
+		refTemp := ce.wearParams.EHLReferenceTempCelsius
+		tempCorrection := math.Exp(-0.05 * (in.tempCelsius - refTemp) * 0.693 / 10.0)
+		viscosity = in.viscosityPaS * tempCorrection
+	}
+	effectiveViscosity := viscosity
 
 	filmThickness := ce.calculateEHLFilm(
 		effectiveRadius,
@@ -276,6 +318,9 @@ func (ce *ComparisonEngine) CompareMaterials(
 			surfaceRMS:      mat.SurfaceRoughnessRMS,
 			elasticModPa:    mat.ElasticModulusPa,
 			viscosityPaS:    baseLubricant.ViscosityPaSAt40C,
+			viscosity40C:    baseLubricant.Viscosity40C,
+			waltherA:        baseLubricant.WaltherIntercept,
+			waltherB:        baseLubricant.WaltherSlope,
 			pressureCoeff:   baseLubricant.PressureViscosityCoeff,
 			ehlBoost:        baseLubricant.EHLBoostFactor,
 			wearReduction:   baseLubricant.WearReductionRatio,
@@ -357,6 +402,9 @@ func (ce *ComparisonEngine) CompareLubricants(
 		surfaceRMS:      mat.SurfaceRoughnessRMS,
 		elasticModPa:    mat.ElasticModulusPa,
 		viscosityPaS:    0.001,
+		viscosity40C:    0,
+		waltherA:        0,
+		waltherB:        0,
 		pressureCoeff:   ce.wearParams.PressureViscosityCoefficient,
 		ehlBoost:        0.1,
 		wearReduction:   0.0,
@@ -384,6 +432,9 @@ func (ce *ComparisonEngine) CompareLubricants(
 			surfaceRMS:      mat.SurfaceRoughnessRMS,
 			elasticModPa:    mat.ElasticModulusPa,
 			viscosityPaS:    lub.ViscosityPaSAt40C,
+			viscosity40C:    lub.Viscosity40C,
+			waltherA:        lub.WaltherIntercept,
+			waltherB:        lub.WaltherSlope,
 			pressureCoeff:   lub.PressureViscosityCoeff,
 			ehlBoost:        lub.EHLBoostFactor,
 			wearReduction:   lub.WearReductionRatio,
@@ -568,6 +619,9 @@ func (ce *ComparisonEngine) CompareMaterialsGeneric(
 			surfaceRMS:      mat.SurfaceRoughnessRMS,
 			elasticModPa:    mat.ElasticModulusPa,
 			viscosityPaS:    lubricant.ViscosityPaSAt40C,
+			viscosity40C:    lubricant.Viscosity40C,
+			waltherA:        lubricant.WaltherIntercept,
+			waltherB:        lubricant.WaltherSlope,
 			pressureCoeff:   lubricant.PressureViscosityCoeff,
 			ehlBoost:        lubricant.EHLBoostFactor,
 			wearReduction:   lubricant.WearReductionRatio,
