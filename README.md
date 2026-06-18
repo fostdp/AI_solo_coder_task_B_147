@@ -462,40 +462,51 @@ Topic: noria/alerts/<bearing_id>/<alert_type>
 ## 目录结构
 
 ```
-AI_solo_coder_task_A_147/
+AI_solo_coder_task_B_147/
 ├── backend/
-│   ├── main.go                          # 程序入口
+│   ├── main.go                          # 程序入口（注册12条新Feature API路由）
 │   ├── go.mod / go.sum
 │   ├── config.yaml                      # 主配置文件
 │   ├── config/
 │   │   ├── wear_params.json            # 磨损参数（外置）
-│   │   └── lubrication_params.json     # 润滑参数（外置）
+│   │   ├── lubrication_params.json     # 润滑参数（外置）
+│   │   ├── bearing_materials.json      # 8种轴承材料参数库（新增）
+│   │   └── lubricants.json            # 9种润滑剂参数库（新增）
 │   └── internal/
-│   │   ├── api/handlers.go           # Gin API处理器
-│   │   ├── config/config.go         # 配置加载
-│   │   ├── database/db.go           # 数据库
-│   │   ├── models/models.go         # 数据模型
-│   │   ├── monitoring/metrics.go    # Prometheus + pprof
-│   │   ├── scheduler/scheduler.go     # Channel调度器
-│   │   └── modules/
-│   │       ├── messages/messages.go        # 消息结构体
-│   │       ├── modbus_receiver/       # Modbus采集校验
-│   │       ├── wear_simulator/       # Archard+EHL磨损计算
-│   │       ├── life_predictor/      # Weibull+RUL寿命预测
-│   │       └── alarm_mqtt/      # MQTT告警推送
+│       ├── api/
+│       │   ├── handlers.go              # 原有API处理器
+│       │   └── feature_handlers.go     # 12条Feature API处理器（新增）
+│       ├── config/config.go          # 配置加载（新增Materials/Lubricants索引）
+│       ├── database/db.go           # 数据库（新增7个维护/对比相关方法）
+│       ├── models/models.go         # 数据模型（新增8个Feature相关模型）
+│       ├── monitoring/metrics.go    # Prometheus + pprof
+│       ├── scheduler/scheduler.go     # Channel调度器
+│       └── modules/
+│           ├── messages/messages.go        # 消息结构体
+│           ├── modbus_receiver/       # Modbus采集校验
+│           ├── wear_simulator/       # Archard+EHL磨损计算
+│           ├── life_predictor/      # Weibull+RUL寿命预测
+│           ├── alarm_mqtt/      # MQTT告警推送
+│           ├── analysis/comparison.go    # 材料/润滑剂/跨时代对比引擎（新增）
+│           └── maintenance/manager.go  # 虚拟维护管理器（新增）
 ├── frontend/
 │   ├── index.html
-│   ├── css/style.css
+│   ├── css/style.css                      # 含~730行Feature新样式
 │   └── js/
 │       ├── waterwheel_3d.js          # 筒车三维渲染
 │       ├── bearing_panel.js        # 轴承剖面+云图
-│       ├── app.js / api.js / charts.js / colormap.js
-│       └── oilfilm-view.js
+│       ├── app.js                           # 新增_initFeatureViews()
+│       ├── api.js                             # 新增15个Feature API方法
+│       ├── charts.js / colormap.js / oilfilm-view.js
+│       ├── material_compare.js         # 材料对比视图（新增）
+│       ├── lubricant_analysis.js       # 润滑剂分析视图（新增）
+│       └── virtual_maintenance.js     # 虚拟维护视图（新增）
 ├── simulator/
 │   └── noria_sensor_simulator.py  # Modbus传感器模拟器
 ├── sql/
 │   ├── init.sql                   # 数据库初始化（表+超表）
-│   └── timescale_policy.sql         # 降采样+保留策略
+│   ├── timescale_policy.sql         # 降采样+保留策略
+│   └── extensions_feature_compare_maintenance.sql   # Feature相关表/视图（新增）
 ├── deploy/
 │   ├── nginx/
 │   │   ├── default.conf            # Nginx站点配置+反代+Gzip
